@@ -17,5 +17,6 @@ public class GuichetDto
     public string? Telephone { get; set; }
     public bool IsActive { get; set; } = true;
 
-    public int nombreAgents { get; set; } = 0;
+    public DateTime DateCreation { get; set; }
+    public int NombreAgents { get; set; }
 }

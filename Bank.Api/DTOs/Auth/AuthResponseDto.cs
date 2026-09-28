@@ -4,6 +4,7 @@ namespace Bank.Api.DTOs.Auth;
 
 public class AuthResponseDto
 {
-    // TODO EXERCICE :
-    // Ajouter les propriétés et attributs de validation définis dans l'énoncé.
+    public string Token { get; set; } = string.Empty;
+    public DateTime Expiration { get; set; }
+    public UserDto User { get; set; } = null!;
 }

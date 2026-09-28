@@ -8,7 +8,7 @@ public class CreateGuichetDto
     [StringLength(20,MinimumLength =2)]
     public string Code { get; set; } = string.Empty;
     [Required]
-    [MaxLength(100)]
+    [MaxLength(120)]
     public string Nom { get; set; } = string.Empty;
     [Required]
     [MaxLength(200)]
@@ -16,5 +16,5 @@ public class CreateGuichetDto
     [Required]
     [MaxLength(100)]
     public string Ville { get; set; } = string.Empty;
-    public string? Telephone { get; set; }
+    [MaxLength(30)] public string? Telephone { get; set; }
 }

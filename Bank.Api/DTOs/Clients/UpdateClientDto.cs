@@ -6,10 +6,10 @@ public class UpdateClientDto
 {
   
     [Required]
-    [MaxLength(30)]
+    [MaxLength(80)]
     public string Nom { get; set; } = string.Empty;
     [Required]
-    [MaxLength(30)]
+    [MaxLength(80)]
     public string Prenom { get; set; } = string.Empty;
     public DateOnly? DateNaissance { get; set; }
     [EmailAddress]

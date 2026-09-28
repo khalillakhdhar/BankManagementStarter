@@ -4,6 +4,9 @@ namespace Bank.Api.DTOs.Auth;
 
 public class LoginDto
 {
-    // TODO EXERCICE :
-    // Ajouter les propriétés et attributs de validation définis dans l'énoncé.
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    public string Password { get; set; } = string.Empty;
 }
