@@ -436,3 +436,26 @@ git push
 Le projet contient déjà l'infrastructure minimale mais **les réponses de l'exercice ne sont pas écrites**.
 
 Les fichiers Models et DTO sont volontairement laissés sous forme de squelette avec des commentaires TODO afin que les candidats réalisent eux-mêmes la modélisation.
+
+---
+
+## API REST et préparation JWT
+
+Les services et contrôleurs pour les clients, guichets, types de comptes, comptes et transactions sont disponibles dans Swagger. Les routes restent publiques pour faciliter la démonstration. Le service et le contrôleur d'authentification seront complétés pendant la séance sécurité.
+
+Les dépendances JWT et Swagger sont déjà déclarées dans le projet. En cas de recréation manuelle :
+
+```powershell
+dotnet add Bank.Api/Bank.Api.csproj package Microsoft.AspNetCore.Authentication.JwtBearer --version 9.0.0
+dotnet add Bank.Api/Bank.Api.csproj package Swashbuckle.AspNetCore --version 7.2.0
+```
+
+Pour préparer et lancer la base de données :
+
+```powershell
+dotnet restore
+dotnet ef database update --project Bank.Api
+dotnet run --project Bank.Api
+```
+
+Pour les opérations de transaction, fournir temporairement l'identifiant d'un agent existant dans le paramètre `agentId`. Plus tard, cet identifiant sera lu depuis le jeton JWT.

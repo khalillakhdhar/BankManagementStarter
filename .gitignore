@@ -11,8 +11,7 @@ obj/
 .idea/
 
 ## Environment / secrets
-.env
-appsettings.Production.json
+
 
 ## OS
 .DS_Store

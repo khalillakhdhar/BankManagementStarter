@@ -27,6 +27,6 @@ public class Compte
     public int GuichetId { get; set; }
 
     public Guichet Guichet { get; set; } = null!;
-    public ICollection<Transaction> TransactionsSources { get; set; }
-    public ICollection<Transaction> TransactionsDestinations { get; set; }
+    public ICollection<Transaction> TransactionsSources { get; set; } = new List<Transaction>();
+    public ICollection<Transaction> TransactionsDestinations { get; set; } = new List<Transaction>();
 }

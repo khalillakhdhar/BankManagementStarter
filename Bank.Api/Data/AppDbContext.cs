@@ -137,13 +137,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Transaction>()
             .HasOne(t => t.CompteSource)
-            .WithMany()
+            .WithMany(c => c.TransactionsSources)
             .HasForeignKey(t => t.CompteSourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Transaction>()
             .HasOne(t => t.CompteDestination)
-            .WithMany()
+            .WithMany(c => c.TransactionsDestinations)
             .HasForeignKey(t => t.CompteDestinationId)
             .OnDelete(DeleteBehavior.Restrict);
 

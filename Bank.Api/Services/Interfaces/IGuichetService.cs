@@ -4,9 +4,9 @@ namespace Bank.Api.Services.Interfaces;
 
 public interface IGuichetService
 {
-    Task<List<GuichetDto>> GetAllAsync() => throw new NotImplementedException();
-    Task<GuichetDto?> GetByIdAsync(int id) => throw new NotImplementedException();
-    Task<GuichetDto> CreateAsync(CreateGuichetDto dto) => throw new NotImplementedException();
-    Task<bool> UpdateAsync(int id, UpdateGuichetDto dto) => throw new NotImplementedException();
-    Task<bool> DeleteAsync(int id) => throw new NotImplementedException();
+    Task<List<GuichetDto>> GetAllAsync();
+    Task<GuichetDto?> GetByIdAsync(int id);
+    Task<GuichetDto> CreateAsync(CreateGuichetDto dto);
+    Task<bool> UpdateAsync(int id, UpdateGuichetDto dto);
+    Task<bool> DeleteAsync(int id);
 }
