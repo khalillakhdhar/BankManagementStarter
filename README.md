@@ -67,6 +67,7 @@ dotnet restore
 Packages prévus :
 
 ```powershell
+liste des importations
 dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.0
 dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.Design --version 9.0.0
 dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.Tools --version 9.0.0
