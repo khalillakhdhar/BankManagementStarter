@@ -1,8 +1,11 @@
 # Bank Management Starter — .NET 9
 
+Documentation complète : [DOCUMENTATION.md](DOCUMENTATION.md)
+
 Squelette backend destiné au projet final de formation **ASP.NET Core .NET 9 + Angular 21**.
 
 Le projet est volontairement préparé pour que les candidats puissent commencer directement l'exercice :
+
 - architecture créée ;
 - fichiers nommés ;
 - packages déclarés ;
@@ -352,6 +355,7 @@ Compléter :
 - `TypeTransaction`
 
 Ajouter :
+
 - propriétés ;
 - clés étrangères ;
 - collections ;
@@ -380,6 +384,7 @@ Data/AppDbContext.cs
 ```
 
 Ajouter :
+
 - DbSet ;
 - index uniques ;
 - précision `decimal(18,2)` ;
@@ -459,3 +464,31 @@ dotnet run --project Bank.Api
 ```
 
 Pour les opérations de transaction, fournir temporairement l'identifiant d'un agent existant dans le paramètre `agentId`. Plus tard, cet identifiant sera lu depuis le jeton JWT.
+
+jouts principaux :
+
+- Authentification JWT complète.
+- Rôles Admin et Agent.
+- Administrateur créé automatiquement au démarrage.
+- Routes métier protégées avec [Authorize].
+- Création d’agents réservée à l’administrateur.
+- Identification automatique de l’agent depuis le JWT pour les transactions.
+- Docker optionnel avec :
+  - [Dockerfile](E:/dotnet bank app/BankManagementStarter/Dockerfile)
+  - [docker-compose.yml](E:/dotnet bank app/BankManagementStarter/docker-compose.yml)
+  - [.env.example](E:/dotnet bank app/BankManagementStarter/.env.example)
+  - [.dockerignore](E:/dotnet bank app/BankManagementStarter/.dockerignore)
+- Documentation complète dans [DOCUMENTATION.md](E:/dotnet bank app/BankManagementStarter/DOCUMENTATION.md).
+  Identifiants admin locaux :
+  Email : admin@bank.local
+  Mot de passe : Admin123!
+  Swagger local :
+  https://localhost:7176/swagger
+  Swagger avec Docker :
+  http://localhost:8080/swagger
+  Pour Docker :
+  Copy-Item .env.example .env
+
+# Modifier les secrets dans .env
+
+docker compose up --build -d

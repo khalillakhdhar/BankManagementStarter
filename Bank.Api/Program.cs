@@ -23,7 +23,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Saisir le jeton JWT. La protection des routes sera ajoutée pendant la séance sécurité."
+        Description = "Saisir uniquement le jeton JWT retourné par POST /api/auth/login."
     });
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -41,12 +41,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // ASP.NET Core Identity
 builder.Services
-    .AddIdentity<ApplicationUser, IdentityRole>()
+    .AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequiredLength = 8;
+    })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// Clé de démonstration uniquement. Utiliser une variable d'environnement en production.
-const string jwtSecret = "zvyy97M7Jj/JIJq7lW9bj9XjvSkqoiwSy6dpLNCUB5T2ZWo4L3GbsDiaKae3gT+mGC2MtV2JZWfApaBf001nrA==";
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException("La configuration Jwt:Secret est obligatoire.");
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,8 +63,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = "Bank.Api",
-        ValidAudience = "Bank.Api.Client",
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
     };
 });
@@ -87,6 +91,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+    await IdentitySeeder.InitializeAsync(scope.ServiceProvider, app.Configuration);
+
 // Swagger disponible pendant la formation
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -95,7 +102,6 @@ app.UseHttpsRedirection();
 
 app.UseCors("AngularClient");
 
-// Aucun [Authorize] n'est appliqué pour permettre les tests libres dans Swagger.
 app.UseAuthentication();
 app.UseAuthorization();
 
