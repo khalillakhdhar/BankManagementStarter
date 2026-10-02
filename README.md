@@ -215,7 +215,7 @@ Swagger doit s'ouvrir automatiquement.
 URL prévue :
 
 ```text
-https://localhost:7176/swagger
+http://localhost:5176/swagger
 ```
 
 Test rapide :
@@ -483,7 +483,7 @@ jouts principaux :
   Email : admin@bank.local
   Mot de passe : Admin123!
   Swagger local :
-  https://localhost:7176/swagger
+  http://localhost:5176/swagger
   Swagger avec Docker :
   http://localhost:8080/swagger
   Pour Docker :

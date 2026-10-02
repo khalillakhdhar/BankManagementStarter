@@ -1,5 +1,6 @@
 using Bank.Api.Data;
 using Bank.Api.Models;
+using Bank.Api.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls(LocalDevelopmentSettings.Url);
 
 // Controllers
 builder.Services.AddControllers();
@@ -36,8 +38,7 @@ builder.Services.AddSwaggerGen(options =>
 
 // SQL Server + Entity Framework Core
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(LocalDevelopmentSettings.ConnectionString));
 
 // ASP.NET Core Identity
 builder.Services
@@ -49,8 +50,6 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("La configuration Jwt:Secret est obligatoire.");
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -63,9 +62,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        ValidIssuer = LocalDevelopmentSettings.JwtIssuer,
+        ValidAudience = LocalDevelopmentSettings.JwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(LocalDevelopmentSettings.JwtSecret))
     };
 });
 
@@ -92,13 +91,11 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
-    await IdentitySeeder.InitializeAsync(scope.ServiceProvider, app.Configuration);
+    await IdentitySeeder.InitializeAsync(scope.ServiceProvider);
 
 // Swagger disponible pendant la formation
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseHttpsRedirection();
 
 app.UseCors("AngularClient");
 

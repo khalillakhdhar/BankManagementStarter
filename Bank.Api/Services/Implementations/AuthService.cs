@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Bank.Api.Configuration;
 using Bank.Api.Data;
 using Bank.Api.DTOs.Auth;
 using Bank.Api.Models;
@@ -15,13 +16,11 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
-    private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<ApplicationUser> userManager, AppDbContext context, IConfiguration configuration)
+    public AuthService(UserManager<ApplicationUser> userManager, AppDbContext context)
     {
         _userManager = userManager;
         _context = context;
-        _configuration = configuration;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
@@ -59,7 +58,7 @@ public class AuthService : IAuthService
     private async Task<AuthResponseDto> GenerateJwtTokenAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);
-        var expiration = DateTime.UtcNow.AddMinutes(_configuration.GetValue("Jwt:ExpirationMinutes", 120));
+        var expiration = DateTime.UtcNow.AddMinutes(LocalDevelopmentSettings.JwtExpirationMinutes);
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
@@ -70,15 +69,13 @@ public class AuthService : IAuthService
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var secret = _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("La clé Jwt:Secret est manquante.");
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: LocalDevelopmentSettings.JwtIssuer,
+            audience: LocalDevelopmentSettings.JwtAudience,
             claims: claims,
             expires: expiration,
             signingCredentials: new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(LocalDevelopmentSettings.JwtSecret)),
                 SecurityAlgorithms.HmacSha256));
 
         return new AuthResponseDto
