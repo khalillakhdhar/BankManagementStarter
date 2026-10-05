@@ -10,17 +10,16 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _service;
 
-    public AuthController(IAuthService service)
-    {
-        _service = service;
-    }
+    public AuthController(IAuthService service) => _service = service;
 
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
         var response = await _service.LoginAsync(dto);
-        return response is null ? Unauthorized(new { message = "Email ou mot de passe invalide." }) : Ok(response);
+        return response is null
+            ? Unauthorized(new { message = "Email ou mot de passe invalide." })
+            : Ok(response);
     }
 
     [Authorize(Roles = "Admin")]
@@ -32,9 +31,9 @@ public class AuthController : ControllerBase
             var user = await _service.CreateAgentAsync(dto);
             return Created($"api/auth/agents/{user.Id}", user);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException exception)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { message = exception.Message });
         }
     }
 }

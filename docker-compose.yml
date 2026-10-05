@@ -1,20 +1,23 @@
+name: bank-management
+
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-BankDemo!2026Sql}"
-    ports:
-      - "${SQL_PORT:-1433}:1433"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Définissez MSSQL_SA_PASSWORD dans le fichier .env}"
     volumes:
-      - bank-sql-data:/var/opt/mssql
+      - sqlserver-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$$MSSQL_SA_PASSWORD' -C -Q 'SELECT 1' || exit 1"]
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" -b -o /dev/null
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 20s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
 
   api:
     build:
@@ -23,17 +26,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_HTTP_PORTS: "8080"
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BankFormationDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-BankDemo!2026Sql};TrustServerCertificate=True"
-      Jwt__Secret: "${JWT_SECRET:-ChangeThisDockerJwtSecret_AtLeast32Characters_2026!}"
-      Jwt__Issuer: "Bank.Api"
-      Jwt__Audience: "Bank.Api.Client"
-      DefaultAdmin__Email: "${ADMIN_EMAIL:-admin@bank.local}"
-      DefaultAdmin__Password: "${ADMIN_PASSWORD:-Admin123!}"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BankFormationDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "127.0.0.1:${API_PORT:-5081}:8080"
     depends_on:
       sqlserver:
         condition: service_healthy
+    init: true
+    restart: unless-stopped
 
 volumes:
-  bank-sql-data:
+  sqlserver-data:

@@ -1,5 +1,5 @@
-using Bank.Api.Models;
 using Bank.Api.Configuration;
+using Bank.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,23 +18,22 @@ public static class IdentitySeeder
                 await roleManager.CreateAsync(new IdentityRole(role));
 
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        const string email = LocalDevelopmentSettings.AdminEmail;
-        const string password = LocalDevelopmentSettings.AdminPassword;
-        var admin = await userManager.FindByEmailAsync(email);
+        var admin = await userManager.FindByEmailAsync(LocalDevelopmentSettings.AdminEmail);
 
         if (admin is null)
         {
             admin = new ApplicationUser
             {
-                UserName = email,
-                Email = email,
+                UserName = LocalDevelopmentSettings.AdminEmail,
+                Email = LocalDevelopmentSettings.AdminEmail,
                 EmailConfirmed = true,
                 Nom = LocalDevelopmentSettings.AdminLastName,
                 Prenom = LocalDevelopmentSettings.AdminFirstName
             };
-            var result = await userManager.CreateAsync(admin, password);
+
+            var result = await userManager.CreateAsync(admin, LocalDevelopmentSettings.AdminPassword);
             if (!result.Succeeded)
-                throw new InvalidOperationException(string.Join(" ", result.Errors.Select(e => e.Description)));
+                throw new InvalidOperationException(string.Join(" ", result.Errors.Select(error => error.Description)));
         }
 
         if (!await userManager.IsInRoleAsync(admin, "Admin"))

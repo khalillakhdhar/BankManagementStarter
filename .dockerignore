@@ -2,12 +2,15 @@
 **/obj/
 .git/
 .gitignore
+.env
+.env.*
+!.env.example
 .vs/
+.dist/
 .vscode/
 .idea/
 *.user
 *.suo
 
-Dockerfile*
 README.md
 DOCUMENTATION.md

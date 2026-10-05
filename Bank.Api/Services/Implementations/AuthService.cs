@@ -34,7 +34,8 @@ public class AuthService : IAuthService
 
     public async Task<UserDto> CreateAgentAsync(CreateAgentDto dto)
     {
-        if (dto.GuichetId.HasValue && !await _context.Guichets.AnyAsync(g => g.Id == dto.GuichetId && g.IsActive))
+        if (dto.GuichetId.HasValue &&
+            !await _context.Guichets.AnyAsync(g => g.Id == dto.GuichetId && g.IsActive))
             throw new InvalidOperationException("Le guichet est introuvable ou inactif.");
 
         var user = new ApplicationUser
@@ -49,7 +50,7 @@ public class AuthService : IAuthService
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join(" ", result.Errors.Select(e => e.Description)));
+            throw new InvalidOperationException(string.Join(" ", result.Errors.Select(error => error.Description)));
 
         await _userManager.AddToRoleAsync(user, "Agent");
         return await ToDtoAsync(user);

@@ -6,6 +6,7 @@
 ## Build
 bin/
 obj/
+.dist/
 
 ## Rider / JetBrains
 .idea/
@@ -17,3 +18,4 @@ obj/
 .DS_Store
 Thumbs.db
 Bank.Api.zip
+.env

@@ -1,5 +1,7 @@
 # Bank Management Starter — .NET 9
 
+Déploiement Docker, changement de port et HTTPS : [DEPLOIEMENT.md](DEPLOIEMENT.md)
+
 Documentation complète : [DOCUMENTATION.md](DOCUMENTATION.md)
 
 Squelette backend destiné au projet final de formation **ASP.NET Core .NET 9 + Angular 21**.
