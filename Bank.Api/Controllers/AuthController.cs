@@ -1,5 +1,3 @@
-using Bank.Api.DTOs.Auth;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bank.Api.Controllers;
@@ -8,32 +6,9 @@ namespace Bank.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _service;
-
-    public AuthController(IAuthService service) => _service = service;
-
-    [AllowAnonymous]
-    [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
-    {
-        var response = await _service.LoginAsync(dto);
-        return response is null
-            ? Unauthorized(new { message = "Email ou mot de passe invalide." })
-            : Ok(response);
-    }
-
-    [Authorize(Roles = "Admin")]
-    [HttpPost("agents")]
-    public async Task<ActionResult<UserDto>> CreateAgent(CreateAgentDto dto)
-    {
-        try
-        {
-            var user = await _service.CreateAgentAsync(dto);
-            return Created($"api/auth/agents/{user.Id}", user);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return BadRequest(new { message = exception.Message });
-        }
-    }
+    // TODO TP SÉCURITÉ :
+    // - injecter IAuthService ;
+    // - implémenter POST api/auth/login ;
+    // - implémenter POST api/auth/agents ;
+    // - ajouter l'authentification JWT et l'autorisation par rôles.
 }

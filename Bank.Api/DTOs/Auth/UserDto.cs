@@ -10,5 +10,4 @@ public class UserDto
     public string Email { get; set; } = string.Empty;
     public int? GuichetId { get; set; }
     public bool IsActive { get; set; }
-    public List<string> Roles { get; set; } = [];
 }

@@ -1,11 +1,9 @@
 using Bank.Api.DTOs.Comptes;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bank.Api.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
 public class ComptesController : ControllerBase
 {

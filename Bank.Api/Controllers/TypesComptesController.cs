@@ -1,11 +1,9 @@
 using Bank.Api.DTOs.TypesComptes;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bank.Api.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
 public class TypesComptesController : ControllerBase
 {
@@ -27,7 +25,6 @@ public class TypesComptesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<TypeCompteDto>> Create(CreateTypeCompteDto dto)
     {
         try
@@ -39,12 +36,10 @@ public class TypesComptesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, UpdateTypeCompteDto dto) =>
         await _service.UpdateAsync(id, dto) ? NoContent() : NotFound();
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id) =>
         await _service.DeleteAsync(id) ? NoContent() : NotFound();
 }
