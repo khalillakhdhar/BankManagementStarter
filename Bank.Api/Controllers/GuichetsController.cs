@@ -1,9 +1,11 @@
 using Bank.Api.DTOs.Guichets;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bank.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class GuichetsController : ControllerBase
 {
@@ -25,6 +27,7 @@ public class GuichetsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<GuichetDto>> Create(CreateGuichetDto dto)
     {
         try
@@ -36,10 +39,12 @@ public class GuichetsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, UpdateGuichetDto dto) =>
         await _service.UpdateAsync(id, dto) ? NoContent() : NotFound();
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id) =>
         await _service.DeleteAsync(id) ? NoContent() : NotFound();
 }
