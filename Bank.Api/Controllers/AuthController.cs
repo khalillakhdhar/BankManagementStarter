@@ -28,6 +28,7 @@ public class AuthController : ControllerBase
 
     // create agent
     [Authorize(Roles = "Admin")]
+    [HttpPost("agents")]
     [HttpPost("agent")]
     public async Task<ActionResult<UserDto>> CreateAgent(CreateAgentDto dto)
     {
