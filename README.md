@@ -264,4 +264,3 @@ Admin123!
 
 Ces identifiants sont réservés à la formation et ne doivent pas être utilisés
 avec des données réelles.
-
