@@ -1,496 +1,267 @@
-# Bank Management Starter — .NET 9
+# iBank — ajout de Google Authenticator (2FA)
 
-Déploiement Docker, changement de port et HTTPS : [DEPLOIEMENT.md](DEPLOIEMENT.md)
+Ce dépôt contient le backend ASP.NET Core .NET 9 de l’application de formation
+iBank. La branche `feature/two-factor-auth` est consacrée à l’ajout d’une
+authentification à deux facteurs compatible avec Google Authenticator.
 
-Documentation complète : [DOCUMENTATION.md](DOCUMENTATION.md)
+> État actuel : la conception 2FA est validée, mais le code fonctionnel reste à
+> implémenter. Ce README décrit pas à pas les changements prévus et ne prétend
+> pas que les endpoints sont déjà disponibles.
 
-Squelette backend destiné au projet final de formation **ASP.NET Core .NET 9 + Angular 21**.
-
-Le projet est volontairement préparé pour que les candidats puissent commencer directement l'exercice :
-
-- architecture créée ;
-- fichiers nommés ;
-- packages déclarés ;
-- SQL Server LocalDB configuré ;
-- Swagger configuré ;
-- Identity préparé ;
-- services enregistrés dans l'injection de dépendances ;
-- contrôleurs déjà créés ;
-- Models et DTO laissés à compléter.
-
----
-
-## 1. Prérequis
-
-- Visual Studio 2022 **17.12 ou supérieur**
-- Workload **ASP.NET and web development**
-- .NET 9 SDK
-- SQL Server LocalDB / SQL Server Express / SQL Server Developer
-- Git
-
-Pour vérifier .NET :
+## 1. Récupérer la branche
 
 ```powershell
-dotnet --version
-```
-
----
-
-## 2. Ouvrir le projet
-
-Ouvrir :
-
-```text
-BankManagement.sln
-```
-
-dans Visual Studio 2022.
-
-Puis :
-
-**Build > Build Solution**
-
-ou dans PowerShell :
-
-```powershell
+git fetch origin
+git switch feature/two-factor-auth
+git pull --ff-only
 dotnet restore
-dotnet build
+dotnet build BankManagement.sln
+dotnet test BankManagement.sln
 ```
 
----
+La conception complète se trouve dans
+[`docs/superpowers/specs/2026-10-30-two-factor-authentication-design.md`](docs/superpowers/specs/2026-10-30-two-factor-authentication-design.md).
 
-## 3. Restaurer les dépendances
+## 2. Comprendre Google Authenticator
 
-Les dépendances sont déjà déclarées dans `Bank.Api.csproj`.
+Google Authenticator utilise le standard TOTP : l’application mobile et le
+backend partagent une clé secrète, puis calculent indépendamment un code à six
+chiffres renouvelé environ toutes les trente secondes.
 
-Il suffit normalement de lancer :
+### Faut-il une API key Google ?
 
-```powershell
-dotnet restore
-```
-
-Packages prévus :
-
-```powershell
-liste des importations
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.Design --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.EntityFrameworkCore.Tools --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.AspNetCore.Identity.EntityFrameworkCore --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.AspNetCore.Authentication.JwtBearer --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Swashbuckle.AspNetCore --version 7.2.0
-```
-
-Ces commandes servent surtout si un candidat recrée le projet manuellement.
-
----
-
-## 4. Base de données
-
-La chaîne de connexion par défaut utilise SQL Server LocalDB :
-
-```json
-"DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=BankFormationDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
-```
-
-Elle fonctionne généralement directement avec Visual Studio sous Windows.
-
-Si vous utilisez SQL Server Express :
-
-```json
-"DefaultConnection": "Server=.\\SQLEXPRESS;Database=BankFormationDb;Trusted_Connection=True;TrustServerCertificate=True"
-```
-
----
-
-# EXERCICE 1
-
-Compléter :
+Non. Google Authenticator ne nécessite ni projet Google Cloud, ni OAuth, ni API
+Google, ni API key. Le backend génère une clé avec ASP.NET Core Identity et
+construit une URI comme :
 
 ```text
-Models/
-DTOs/
-Enums/TypeTransaction.cs
-Data/AppDbContext.cs
+otpauth://totp/iBank:utilisateur@example.com?secret=CLE&issuer=iBank
 ```
 
-Les fichiers contiennent des commentaires `TODO EXERCICE`.
+Le frontend transforme cette URI en QR code localement. La clé secrète n’est
+envoyée à aucun service QR externe.
 
-Après avoir ajouté les propriétés `Id` dans les entités, décommenter les `DbSet` dans `AppDbContext.cs`.
+## 3. Préparer le backend
 
----
+Le projet utilise déjà `Microsoft.AspNetCore.Identity`. Son fournisseur de
+codes Authenticator est inclus ; aucune bibliothèque TOTP externe ne sera
+ajoutée.
 
-## 5. Migrations avec Visual Studio
-
-Ouvrir :
+Les modifications concerneront :
 
 ```text
-Tools
-> NuGet Package Manager
-> Package Manager Console
+Bank.Api/
+├── Controllers/AuthController.cs
+├── DTOs/Auth/
+│   ├── LoginResponseDto.cs
+│   ├── TwoFactorLoginDto.cs
+│   ├── TwoFactorSetupDto.cs
+│   └── TwoFactorCodeDto.cs
+├── Services/Interfaces/IAuthService.cs
+└── Services/Implementations/AuthService.cs
 ```
 
-Vérifier :
+Les clés Authenticator et les codes de récupération seront stockés dans les
+tables Identity existantes. Aucune nouvelle table métier n’est nécessaire.
 
-```text
-Default project = Bank.Api
+## 4. Modifier la première étape de connexion
+
+La route existante reste :
+
+```http
+POST /api/auth/login
 ```
 
-Puis :
+Elle vérifie d’abord l’e-mail et le mot de passe.
 
-```powershell
-Add-Migration InitialCreate
-Update-Database
-```
-
-Pour annuler la dernière migration non appliquée :
-
-```powershell
-Remove-Migration
-```
-
-Pour créer une nouvelle migration :
-
-```powershell
-Add-Migration NomDeLaMigration
-Update-Database
-```
-
----
-
-## 6. Migrations avec dotnet CLI
-
-Installer l'outil EF si nécessaire :
-
-```powershell
-dotnet tool install --global dotnet-ef --version 9.*
-```
-
-ou mettre à jour :
-
-```powershell
-dotnet tool update --global dotnet-ef --version 9.*
-```
-
-Créer la migration :
-
-```powershell
-dotnet ef migrations add InitialCreate --project Bank.Api
-```
-
-Appliquer la migration :
-
-```powershell
-dotnet ef database update --project Bank.Api
-```
-
-Lister les migrations :
-
-```powershell
-dotnet ef migrations list --project Bank.Api
-```
-
----
-
-## 7. Lancer le backend
-
-Visual Studio :
-
-```text
-F5
-```
-
-ou :
-
-```text
-Ctrl + F5
-```
-
-En CLI :
-
-```powershell
-dotnet run --project Bank.Api
-```
-
-Swagger doit s'ouvrir automatiquement.
-
-URL prévue :
-
-```text
-http://localhost:5176/swagger
-```
-
-Test rapide :
-
-```text
-GET /api/health
-```
-
-Réponse attendue :
+- Sans 2FA, elle renvoie le JWT et l’utilisateur comme avant.
+- Avec 2FA, elle ne renvoie aucun JWT métier. Elle renvoie un challenge signé
+  valable cinq minutes et `requiresTwoFactor: true`.
 
 ```json
 {
-  "status": "OK",
-  "project": "Bank.Api",
-  "message": "Backend skeleton is running"
+  "requiresTwoFactor": true,
+  "twoFactorChallenge": "challenge-signe-temporaire"
 }
 ```
 
----
+Le challenge contient seulement l’identifiant utilisateur et un marqueur
+d’usage. Il ne donne pas accès aux routes protégées par `[Authorize]`.
 
-## 8. Structure du projet
+## 5. Ajouter la seconde étape de connexion
 
-```text
-BankManagementStarter/
-├── BankManagement.sln
-├── README.md
-├── .gitignore
-└── Bank.Api/
-    ├── Controllers/
-    │   ├── AuthController.cs
-    │   ├── ClientsController.cs
-    │   ├── ComptesController.cs
-    │   ├── GuichetsController.cs
-    │   ├── HealthController.cs
-    │   ├── TransactionsController.cs
-    │   └── TypesComptesController.cs
-    │
-    ├── Data/
-    │   └── AppDbContext.cs
-    │
-    ├── DTOs/
-    │   ├── Auth/
-    │   ├── Clients/
-    │   ├── Comptes/
-    │   ├── Guichets/
-    │   ├── Transactions/
-    │   └── TypesComptes/
-    │
-    ├── Enums/
-    │   └── TypeTransaction.cs
-    │
-    ├── Models/
-    │   ├── ApplicationUser.cs
-    │   ├── Client.cs
-    │   ├── Compte.cs
-    │   ├── Guichet.cs
-    │   ├── Transaction.cs
-    │   └── TypeCompte.cs
-    │
-    ├── Services/
-    │   ├── Interfaces/
-    │   └── Implementations/
-    │
-    ├── Properties/
-    │   └── launchSettings.json
-    │
-    ├── appsettings.json
-    ├── appsettings.Development.json
-    ├── Bank.Api.csproj
-    ├── GlobalUsings.cs
-    └── Program.cs
+```http
+POST /api/auth/login/2fa
 ```
 
----
+Avec Google Authenticator :
 
-## 9. Git — première publication
+```json
+{
+  "challenge": "challenge-signe-temporaire",
+  "code": "123456",
+  "useRecoveryCode": false
+}
+```
 
-Dans le dossier racine :
+Avec un code de récupération :
+
+```json
+{
+  "challenge": "challenge-signe-temporaire",
+  "code": "abcd-efgh",
+  "useRecoveryCode": true
+}
+```
+
+Après validation, cette route émet le JWT normal. Un recovery code est à usage
+unique. Un challenge expiré, altéré ou incorrect est refusé sans indiquer quelle
+partie de la demande était invalide.
+
+## 6. Ajouter les routes de gestion
+
+Toutes les routes suivantes exigent le JWT normal.
+
+### État du 2FA
+
+```http
+GET /api/auth/2fa/status
+```
+
+Indique si le 2FA est actif et combien de recovery codes restent.
+
+### Préparation
+
+```http
+POST /api/auth/2fa/setup
+```
+
+Génère ou réinitialise la clé tant que le 2FA n’est pas actif :
+
+```json
+{
+  "sharedKey": "CLE-MANUELLE",
+  "authenticatorUri": "otpauth://totp/..."
+}
+```
+
+### Activation
+
+```http
+POST /api/auth/2fa/enable
+```
+
+```json
+{
+  "code": "123456"
+}
+```
+
+Le premier code doit être valide. Le backend active ensuite le 2FA et renvoie
+les recovery codes une seule fois.
+
+### Régénération des recovery codes
+
+```http
+POST /api/auth/2fa/recovery-codes
+```
+
+La demande contient un code Authenticator valide. Les anciens recovery codes
+deviennent inutilisables.
+
+### Désactivation
+
+```http
+POST /api/auth/2fa/disable
+```
+
+Après validation d’un code Authenticator, Identity désactive le 2FA, supprime
+les recovery codes et renouvelle la clé secrète.
+
+## 7. Changements frontend Angular
+
+Le frontend se trouve dans
+[`khalillakhdhar/ibankfront`](https://github.com/khalillakhdhar/ibankfront), sur
+la même branche `feature/two-factor-auth`.
+
+Les changements prévus sont :
+
+1. reconnaître `requiresTwoFactor` dans `AuthService.login()` ;
+2. conserver le challenge uniquement en mémoire, jamais dans `localStorage` ;
+3. afficher la saisie du code après le mot de passe ;
+4. permettre l’utilisation d’un recovery code ;
+5. ajouter au profil la configuration et la désactivation du 2FA ;
+6. générer le QR code localement depuis `authenticatorUri` ;
+7. afficher les recovery codes une seule fois après activation ;
+8. créer la session locale seulement après validation des deux facteurs.
+
+## 8. Parcours utilisateur
+
+### Activation
+
+1. L’utilisateur se connecte normalement.
+2. Il ouvre **Mon profil**, puis **Activer le 2FA**.
+3. Le frontend demande la configuration au backend.
+4. L’utilisateur ouvre Google Authenticator sur son téléphone.
+5. Il appuie sur `+`, puis **Scanner un code QR**.
+6. Il scanne le QR affiché par iBank.
+7. Il saisit dans iBank le code à six chiffres généré sur le téléphone.
+8. Le backend valide le code et active le 2FA.
+9. L’utilisateur conserve les recovery codes hors de l’application.
+
+### Connexions suivantes
+
+1. L’utilisateur saisit son e-mail et son mot de passe.
+2. Le backend renvoie un challenge temporaire, sans JWT.
+3. L’utilisateur saisit le code Google Authenticator.
+4. Le backend valide le code et renvoie la session JWT.
+5. Le frontend ouvre le tableau de bord correspondant au rôle.
+
+## 9. Tests à ajouter
+
+Les tests backend devront vérifier :
+
+- la connexion existante sans 2FA ;
+- l’absence de JWT après le mot de passe lorsque le 2FA est actif ;
+- le refus d’un challenge expiré ou altéré ;
+- le refus d’un TOTP invalide et l’acceptation d’un TOTP valide ;
+- la consommation unique d’un recovery code ;
+- l’impossibilité d’activer le 2FA sans premier code valide ;
+- la protection JWT des routes de gestion ;
+- la désactivation et la régénération avec un code valide.
+
+Vérifications backend :
 
 ```powershell
-git init
-git add .
-git commit -m "chore: initialize bank management backend skeleton"
-git branch -M main
-git remote add origin URL_DU_REPOSITORY
-git push -u origin main
+dotnet restore BankManagement.sln
+dotnet build BankManagement.sln --configuration Release -warnaserror
+dotnet test BankManagement.sln --configuration Release
+dotnet publish Bank.Api/Bank.Api.csproj --configuration Release
 ```
 
-Vérifier :
+Vérifications frontend :
 
 ```powershell
-git status
-git log --oneline
+npm ci
+npm run build
 ```
 
----
-
-## 10. Récupération sur le VPS
-
-Première fois :
-
-```bash
-sudo apt update
-sudo apt install git -y
-
-mkdir -p ~/apps
-cd ~/apps
-
-git clone URL_DU_REPOSITORY bank-management
-cd bank-management
-git status
-```
-
-Mises à jour suivantes :
-
-```bash
-cd ~/apps/bank-management
-git pull origin main
-```
-
-La dockerisation sera faite dans la séance de déploiement.
-
----
-
-## 11. Travail demandé au candidat
-
-### Models
-
-Compléter :
-
-- `ApplicationUser`
-- `Guichet`
-- `Client`
-- `TypeCompte`
-- `Compte`
-- `Transaction`
-- `TypeTransaction`
-
-Ajouter :
-
-- propriétés ;
-- clés étrangères ;
-- collections ;
-- DataAnnotations ;
-- relations.
-
-### DTO
-
-Compléter les DTO contenus dans :
-
-```text
-DTOs/Auth
-DTOs/Guichets
-DTOs/Clients
-DTOs/TypesComptes
-DTOs/Comptes
-DTOs/Transactions
-```
-
-### DbContext
-
-Compléter :
-
-```text
-Data/AppDbContext.cs
-```
-
-Ajouter :
-
-- DbSet ;
-- index uniques ;
-- précision `decimal(18,2)` ;
-- relations ;
-- `DeleteBehavior.Restrict`.
-
-### Migration
-
-Créer :
+## 10. Lancement local
 
 ```powershell
-Add-Migration InitialCreate
-Update-Database
-```
-
----
-
-## 12. Vérification avant remise
-
-Le candidat doit pouvoir exécuter :
-
-```powershell
-dotnet restore
-dotnet build
 dotnet run --project Bank.Api
 ```
 
-Puis vérifier Swagger et :
+- Swagger : `http://localhost:5176/swagger`
+- Santé : `http://localhost:5176/api/health`
+
+Identifiants de formation :
 
 ```text
-GET /api/health
+admin@bank.local
+Admin123!
 ```
 
-Après réalisation des Models :
+Ces identifiants sont réservés à la formation et ne doivent pas être utilisés
+avec des données réelles.
 
-```powershell
-Add-Migration InitialCreate
-Update-Database
-```
-
-Enfin :
-
-```powershell
-git status
-git add .
-git commit -m "feat: complete models DTOs and initial migration"
-git push
-```
-
----
-
-## Important
-
-Le projet contient déjà l'infrastructure minimale mais **les réponses de l'exercice ne sont pas écrites**.
-
-Les fichiers Models et DTO sont volontairement laissés sous forme de squelette avec des commentaires TODO afin que les candidats réalisent eux-mêmes la modélisation.
-
----
-
-## API REST et préparation JWT
-
-Les services et contrôleurs pour les clients, guichets, types de comptes, comptes et transactions sont disponibles dans Swagger. Les routes restent publiques pour faciliter la démonstration. Le service et le contrôleur d'authentification seront complétés pendant la séance sécurité.
-
-Les dépendances JWT et Swagger sont déjà déclarées dans le projet. En cas de recréation manuelle :
-
-```powershell
-dotnet add Bank.Api/Bank.Api.csproj package Microsoft.AspNetCore.Authentication.JwtBearer --version 9.0.0
-dotnet add Bank.Api/Bank.Api.csproj package Swashbuckle.AspNetCore --version 7.2.0
-```
-
-Pour préparer et lancer la base de données :
-
-```powershell
-dotnet restore
-dotnet ef database update --project Bank.Api
-dotnet run --project Bank.Api
-```
-
-Pour les opérations de transaction, fournir temporairement l'identifiant d'un agent existant dans le paramètre `agentId`. Plus tard, cet identifiant sera lu depuis le jeton JWT.
-
-jouts principaux :
-
-- Authentification JWT complète.
-- Rôles Admin et Agent.
-- Administrateur créé automatiquement au démarrage.
-- Routes métier protégées avec [Authorize].
-- Création d’agents réservée à l’administrateur.
-- Identification automatique de l’agent depuis le JWT pour les transactions.
-- Docker optionnel avec :
-  - [Dockerfile](E:/dotnet bank app/BankManagementStarter/Dockerfile)
-  - [docker-compose.yml](E:/dotnet bank app/BankManagementStarter/docker-compose.yml)
-  - [.env.example](E:/dotnet bank app/BankManagementStarter/.env.example)
-  - [.dockerignore](E:/dotnet bank app/BankManagementStarter/.dockerignore)
-- Documentation complète dans [DOCUMENTATION.md](E:/dotnet bank app/BankManagementStarter/DOCUMENTATION.md).
-  Identifiants admin locaux :
-  Email : admin@bank.local
-  Mot de passe : Admin123!
-  Swagger local :
-  http://localhost:5176/swagger
-  Swagger avec Docker :
-  http://localhost:8080/swagger
-  Pour Docker :
-  Copy-Item .env.example .env
-
-# Modifier les secrets dans .env
-
-docker compose up --build -d
